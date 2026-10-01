@@ -54,7 +54,8 @@ export function applyTheme(cfg) {
   const ac = dark ? mix(accent, "#ffffff", 0.22) : accent;
   root.dataset.mode = dark ? "dark" : "light";
   root.style.setProperty("--ac", ac);
-  root.style.setProperty("--on-ac", lum(ac) > 0.5 ? "#2a1830" : "#ffffff");
+  const L = lum(ac), cBranco = 1.05 / (L + 0.05), cEscuro = (L + 0.05) / (lum("#2a1830") + 0.05);
+  root.style.setProperty("--on-ac", cBranco >= cEscuro ? "#ffffff" : "#2a1830");
   root.style.setProperty("--font", stack(c.fonteTexto, false));
   root.style.setProperty("--font-h", c.fonteTitulo.startsWith("Mesma") ? stack(c.fonteTexto, false) : stack(c.fonteTitulo, true));
   root.style.setProperty("--r", { reto: "6px", suave: "14px", redondo: "22px" }[c.cantos] || "14px");
