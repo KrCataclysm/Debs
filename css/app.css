@@ -160,9 +160,9 @@ textarea.input { resize: vertical; line-height: 1.55; } select.input { appearanc
 @keyframes shake { 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
 [hidden] { display: none !important; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; } .chips.center-chips { justify-content: center; }
-.chipbtn { --c: var(--ac); display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line2); background: var(--surface); padding: 7px 15px; border-radius: 99px; font-weight: 700; font-size: .84rem; cursor: pointer; color: var(--ink2); transition: all .25s var(--ease); }
+.chipbtn { --c: var(--ac); --on-c: var(--on-ac); display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line2); background: var(--surface); padding: 7px 15px; border-radius: 99px; font-weight: 700; font-size: .84rem; cursor: pointer; color: var(--ink2); transition: all .25s var(--ease); }
 .chipbtn:hover:not(:disabled) { border-color: var(--c); color: var(--ink); } .chipbtn:disabled { opacity: .5; cursor: default; }
-.chipbtn.on { background: var(--c); border-color: var(--c); color: #fff; transform: scale(1.03); } .cdot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); } .chipbtn.on .cdot { background: #fff; }
+.chipbtn.on { background: var(--c); border-color: var(--c); color: var(--on-c); transform: scale(1.03); } .cdot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); } .chipbtn.on .cdot { background: #fff; }
 .chips.emojis .chipbtn { font-size: 1.2rem; padding: 6px 11px; } .chips.filter { gap: 6px; } .chips.filter .chipbtn { padding: 6px 13px; font-size: .8rem; }
 .swatches { display: flex; gap: 10px; flex-wrap: wrap; } .swatch { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--line2); cursor: pointer; transition: transform .25s var(--spring), box-shadow .2s; } .swatch:hover { transform: scale(1.12); } .swatch.on { box-shadow: 0 0 0 3px var(--ink); }
 .switch-row { display: flex; align-items: center; gap: 12px; cursor: pointer; font-weight: 700; } .switch-row.split { justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--line); } .switch-row.split:first-child { border-top: 0; }

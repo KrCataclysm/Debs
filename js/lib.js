@@ -244,7 +244,7 @@ export function formSheet({ title, fields, values = {}, submitLabel = "Salvar", 
           h("span", { class: "switch" }), h("span", null, f.label));
       } else if (f.type === "chips" || f.type === "emoji") {
         const box = h("div", { class: "chips" + (f.type === "emoji" ? " emojis" : ""), role: "radiogroup", "aria-label": f.label });
-        const draw = () => { box.innerHTML = ""; f.options.map(norm).forEach((o) => box.appendChild(h("button", { type: "button", role: "radio", class: "chipbtn" + (String(st[f.key]) === String(o.v) ? " on" : ""), style: o.c ? { "--c": o.c } : null, "aria-checked": String(String(st[f.key]) === String(o.v)), onclick: () => { st[f.key] = o.v; draw(); refresh(); } }, o.c ? h("i", { class: "cdot" }) : null, o.l))); };
+        const draw = () => { box.innerHTML = ""; f.options.map(norm).forEach((o) => box.appendChild(h("button", { type: "button", role: "radio", class: "chipbtn" + (String(st[f.key]) === String(o.v) ? " on" : ""), style: o.c ? { "--c": o.c, "--on-c": "#fff" } : null, "aria-checked": String(String(st[f.key]) === String(o.v)), onclick: () => { st[f.key] = o.v; draw(); refresh(); } }, o.c ? h("i", { class: "cdot" }) : null, o.l))); };
         draw(); input = box;
       } else if (f.type === "color") {
         const box = h("div", { class: "swatches" });

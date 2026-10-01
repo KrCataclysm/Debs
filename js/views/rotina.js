@@ -57,7 +57,7 @@ export function linhaRotina(a, c, { mostrarArea = true } = {}) {
 export function filtroAreas(atual, onPick, usadas) {
   const opts = [{ v: "", l: "Tudo" }].concat(Object.entries(AREAS).filter(([k]) => !usadas || usadas.has(k)).map(([v, o]) => ({ v, l: o.l, c: o.c })));
   if (opts.length <= 2) return null;
-  return h("div", { class: "chips filter", role: "group", "aria-label": "Filtrar por área" }, opts.map((o) => h("button", { type: "button", class: "chipbtn" + (atual === o.v ? " on" : ""), style: o.c ? { "--c": o.c } : null, "aria-pressed": String(atual === o.v), onclick: () => onPick(o.v) }, o.c ? h("i", { class: "cdot" }) : null, o.l)));
+  return h("div", { class: "chips filter", role: "group", "aria-label": "Filtrar por área" }, opts.map((o) => h("button", { type: "button", class: "chipbtn" + (atual === o.v ? " on" : ""), style: o.c ? { "--c": o.c, "--on-c": "#fff" } : null, "aria-pressed": String(atual === o.v), onclick: () => onPick(o.v) }, o.c ? h("i", { class: "cdot" }) : null, o.l)));
 }
 
 export function render(root) {
