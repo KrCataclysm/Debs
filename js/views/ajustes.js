@@ -4,8 +4,8 @@ import { TEMAS, FONTES_TEXTO, FONTES_TITULO } from "../theme.js";
 
 const MODULOS = [
   ["rotina", "Rotina", "Atividades que se repetem"], ["tarefas", "Tarefas", "Lista de afazeres com prazo"], ["calendario", "Calendário", "Visão do mês"],
-  ["habitos", "Hábitos", "Sequências diárias"], ["bemestar", "Bem-estar", "Humor, sono, água, diário e gratidão"], ["ciclo", "Ciclo menstrual", "Dentro do Bem-estar, bem privado (opcional)"],
-  ["financas", "Finanças", "Lançamentos, contas e metas"], ["estudos", "Estudos", "Provas, trabalhos e metas"], ["notas", "Notas", "Bloco de anotações"],
+  ["habitos", "Hábitos", "Sequências diárias"], ["bemestar", "Bem-estar", "Humor, sono, água, diário e gratidão"],
+  ["financas", "Finanças", "Lançamentos, contas e metas"], ["estudos", "Faculdade", "Aulas, provas, faltas, foco e metas"], ["notas", "Notas", "Bloco de anotações"],
   ["listas", "Listas", "Mercado, desejos e cardápio"], ["datas", "Datas importantes", "Aniversários e compromissos"], ["resumo", "Resumo", "Relatório mensal"]
 ];
 
@@ -40,12 +40,12 @@ function importarLegado() {
 export function render(root, { cfg }) {
   const set = (p) => { db.setConfig(p); };
   const user = db.user(), perfil = db.perfil() || {}, st = db.status();
-  root.appendChild(h("div", { class: "page-head" }, h("div", null, h("h1", null, "Ajustes"), h("p", { class: "muted" }, "Deixe o app com a sua cara."))));
+  root.appendChild(h("div", { class: "page-head" }, h("div", null, h("p", { class: "eyebrow" }, "Personalização"), h("h1", null, "Ajustes"), h("p", { class: "muted" }, "Deixe o app com a sua cara."))));
   const sec = (titulo, ic, ...kids) => h("section", { class: "card stack" }, h("h3", { class: "row gap" }, icon(ic, 18), titulo), ...kids);
 
   root.appendChild(sec("Perfil", "user",
     h("div", { class: "field" }, h("label", { class: "flabel", for: "perfil-nome" }, "Como posso te chamar?"),
-      h("input", { class: "input", id: "perfil-nome", maxlength: 40, value: perfil.nome || "", placeholder: "Seu nome", onblur: (e) => { if (e.target.value.trim() !== (perfil.nome || "")) db.setNome(e.target.value.trim()); } })),
+      h("input", { class: "input", id: "perfil-nome", maxlength: 40, value: perfil.nome || "", placeholder: "Seu nome", onblur: (e) => { if (e.target.value.trim() !== (perfil.nome || "")) db.quiet(() => db.setNome(e.target.value.trim())); } })),
     h("p", { class: "muted small" }, "Conta: " + (user ? user.email : "—"))));
 
   const custom = h("input", { type: "color", value: cfg.accent || (TEMAS.find((t) => t.id === cfg.tema) || TEMAS[0]).accent, "aria-label": "Escolher outra cor", onchange: (e) => set({ accent: e.target.value }) });
@@ -83,5 +83,5 @@ export function render(root, { cfg }) {
     h("button", { class: "btn ghost", type: "button", onclick: trocarSenha }, "Trocar senha"),
     h("button", { class: "btn danger-ghost", type: "button", onclick: async () => { if (await confirmBox(st.pending ? "Há alterações ainda não enviadas. Conecte-se à internet antes de sair para não perdê-las." : "Você precisará entrar de novo.", { ok: "Sair", title: "Sair da conta?", danger: !!st.pending })) db.signOut(); } }, icon("logout", 18), h("span", null, "Sair")))));
 
-  root.appendChild(h("p", { class: "note center-text" }, "Lírio · feito com carinho 🌸"));
+  root.appendChild(h("p", { class: "note center-text" }, "Lírio · feito com carinho para a Débora"));
 }

@@ -157,16 +157,3 @@ export function eventosDoMes(ano, mes, cfg) {
   });
   return ev;
 }
-
-/* ---------- ciclo menstrual (estimativa simples, só para organização) ---------- */
-export function previsaoCiclo() {
-  const f = rows("bemestar").filter((b) => b.fluxo > 0).map((b) => b.dia).sort();
-  if (!f.length) return null;
-  const set = new Set(f), inicios = [];
-  f.forEach((d) => { if (!set.has(iso(add(parse(d), -1)))) inicios.push(parse(d)); });
-  const ult = inicios[inicios.length - 1];
-  const gaps = []; for (let i = 1; i < inicios.length; i++) gaps.push(between(inicios[i - 1], inicios[i]));
-  const rec = gaps.filter((g) => g >= 18 && g <= 45).slice(-6);
-  const media = rec.length ? Math.round(rec.reduce((a, b) => a + b, 0) / rec.length) : 28;
-  return { ultimo: ult, media, proximo: add(ult, media), baseadoEm: rec.length };
-}

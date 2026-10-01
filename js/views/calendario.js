@@ -4,7 +4,7 @@ import { rerender } from "../lib.js";
 import { editarTarefa } from "./tarefas.js";
 
 let vista = null;
-const TIPOS = { rotina: "Rotina", aviso: "Preparação", tarefa: "Tarefa", conta: "Conta a pagar", estudo: "Estudos", data: "Data especial" };
+const TIPOS = { rotina: "Rotina", aviso: "Preparação", tarefa: "Tarefa", conta: "Conta a pagar", estudo: "Faculdade", data: "Data especial" };
 
 function abrirDia(d, evs, fer) {
   sheet(d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" }), (close) => h("div", { class: "stack" },
@@ -22,7 +22,7 @@ export function render(root, { cfg }) {
   const offset = vista.getDay(), dias = new Date(vista.getFullYear(), vista.getMonth() + 1, 0).getDate();
   const cells = Math.ceil((offset + dias) / 7) * 7, start = add(vista, -offset);
 
-  root.appendChild(h("div", { class: "page-head" }, h("div", null, h("h1", null, "Calendário"), h("p", { class: "muted" }, "Tudo o que está marcado, num só lugar."))));
+  root.appendChild(h("div", { class: "page-head" }, h("div", null, h("p", { class: "eyebrow" }, "Visão do mês"), h("h1", null, "Calendário"), h("p", { class: "muted" }, "Tudo o que está marcado, num só lugar."))));
   root.appendChild(monthNav(vista, (d) => { vista = d; rerender(); }, () => { vista = new Date(t.getFullYear(), t.getMonth(), 1); rerender(); }));
 
   const grid = h("div", { class: "cal" }, DIAS.map((d) => h("div", { class: "cal-dow" }, d)));
@@ -36,7 +36,7 @@ export function render(root, { cfg }) {
     grid.appendChild(cell);
   }
   root.appendChild(h("div", { class: "card calcard" }, grid));
-  root.appendChild(h("div", { class: "legend" }, [["rotina", "Rotina"], ["aviso", "Preparação"], ["tarefa", "Tarefa"], ["conta", "Conta"], ["estudo", "Estudos"], ["data", "Data especial"], ["fer", "Feriado"]]
+  root.appendChild(h("div", { class: "legend" }, [["rotina", "Rotina"], ["aviso", "Preparação"], ["tarefa", "Tarefa"], ["conta", "Conta"], ["estudo", "Faculdade"], ["data", "Data especial"], ["fer", "Feriado"]]
     .map(([c, l]) => h("span", { class: "legend-i" }, h("i", { class: "ev " + c }), l))));
   root.appendChild(h("p", { class: "note" }, "Feriados nacionais e a Sexta-feira Santa são calculados automaticamente. Toque num dia para ver os detalhes."));
 }

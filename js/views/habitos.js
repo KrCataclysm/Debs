@@ -25,7 +25,7 @@ function editar(x, pre) {
 export function render(root) {
   const lista = db.rows("habitos").sort((a, b) => a.created_at.localeCompare(b.created_at));
   const idx = checksIdx(), t = hoje(), hojeIso = iso(t);
-  root.appendChild(h("div", { class: "page-head" }, h("div", null, h("h1", null, "Hábitos"), h("p", { class: "muted" }, "Pequenos gestos todo dia.")),
+  root.appendChild(h("div", { class: "page-head" }, h("div", null, h("p", { class: "eyebrow" }, "Todo dia"), h("h1", null, "Hábitos"), h("p", { class: "muted" }, "Pequenos gestos todo dia.")),
     h("button", { class: "btn primary", type: "button", onclick: () => editar() }, icon("plus", 18), h("span", null, "Novo hábito"))));
 
   if (!lista.length) { root.appendChild(empty("Crie seu primeiro hábito. Comece pequeno!", h("div", { class: "chips" }, SUGESTOES.map((s) => h("button", { class: "chipbtn", type: "button", onclick: () => editar(null, s) }, s[0] + " " + s[1]))))); return; }

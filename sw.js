@@ -1,10 +1,10 @@
 /* Service worker do Lírio: abre offline. Supabase nunca passa por aqui. */
-const VERSAO = "lirio-v1";
+const VERSAO = "lirio-v2";
 const SHELL = ["./", "index.html", "css/app.css", "manifest.webmanifest", "vendor/supabase.js",
   "js/app.js", "js/lib.js", "js/theme.js", "js/store.js", "js/engine.js", "js/config.js",
   "js/views/hoje.js", "js/views/rotina.js", "js/views/tarefas.js", "js/views/calendario.js", "js/views/habitos.js", "js/views/bemestar.js",
   "js/views/financas.js", "js/views/estudos.js", "js/views/notas.js", "js/views/listas.js", "js/views/datas.js", "js/views/resumo.js", "js/views/ajustes.js",
-  "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/favicon-32.png"];
+  "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/favicon-32.png", "icons/flor.png"];
 
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {

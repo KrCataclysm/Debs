@@ -20,7 +20,7 @@ function editar(n) {
 }
 
 export function render(root) {
-  root.appendChild(h("div", { class: "page-head" }, h("div", null, h("h1", null, "Notas"), h("p", { class: "muted" }, "Ideias, listas e lembranças.")),
+  root.appendChild(h("div", { class: "page-head" }, h("div", null, h("p", { class: "eyebrow" }, "Anotações"), h("h1", null, "Notas"), h("p", { class: "muted" }, "Ideias, listas e lembranças.")),
     h("button", { class: "btn primary", type: "button", onclick: () => editar() }, icon("plus", 18), h("span", null, "Nova nota"))));
   const q = h("input", { class: "input", type: "search", placeholder: "Buscar nas notas…", "aria-label": "Buscar", value: busca, oninput: (e) => { busca = e.target.value; clearTimeout(q._t); q._t = setTimeout(() => { rerender(); setTimeout(() => { const el = document.querySelector('input[type=search]'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, 0); }, 250); } });
   root.appendChild(h("div", { class: "searchbox" }, icon("search", 18), q));

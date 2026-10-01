@@ -1,25 +1,22 @@
 import { h, icon, chip, add, iso, hoje, parse, dia, rel, between, rerender } from "../lib.js";
 import * as db from "../store.js";
-import { previsaoCiclo } from "../engine.js";
 
 let diaSel = null;
 const HUMORES = ["😞", "😕", "😐", "🙂", "😄"];
 const HUMOR_TXT = ["Muito mal", "Mal", "Mais ou menos", "Bem", "Ótima"];
 const ENERGIA = ["🪫", "🔋", "🔋", "⚡", "⚡"];
-const SINTOMAS = ["Cólica", "Dor de cabeça", "Inchaço", "Cansaço", "TPM", "Ansiedade", "Enxaqueca", "Acne", "Sono ruim", "Tudo bem"];
-const FLUXO = [{ v: 0, l: "Nenhum" }, { v: 1, l: "Leve" }, { v: 2, l: "Médio" }, { v: 3, l: "Intenso" }];
+const SINTOMAS = ["Motivada", "Tudo bem", "Cansaço", "Estresse", "Ansiedade", "Dor de cabeça", "Sono ruim", "Inchaço"];
 
 const media = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null);
 
-export function render(root, { cfg }) {
+export function render(root) {
   const t = hoje();
   if (!diaSel) diaSel = t;
   const k = iso(diaSel);
   const reg = db.rows("bemestar").find((b) => b.dia === k) || {};
   const salvar = (p) => db.upsertBy("bemestar", { dia: k, user_id: db.user().id }, p);
-  const ciclo = cfg.modulos.ciclo;
 
-  root.appendChild(h("div", { class: "page-head" }, h("div", null, h("h1", null, "Bem-estar"), h("p", { class: "muted" }, "Um minuto por dia para se ouvir."))));
+  root.appendChild(h("div", { class: "page-head" }, h("div", null, h("p", { class: "eyebrow" }, "Autocuidado"), h("h1", null, "Bem-estar"), h("p", { class: "muted" }, "Um minuto por dia para se ouvir."))));
   root.appendChild(h("div", { class: "row between center" },
     h("button", { class: "btn icon ghost", type: "button", "aria-label": "Dia anterior", onclick: () => { diaSel = add(diaSel, -1); rerender(); } }, icon("left")),
     h("div", { class: "center-text" }, h("strong", null, diaSel.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })), h("div", { class: "muted small" }, rel(diaSel))),
@@ -44,16 +41,8 @@ export function render(root, { cfg }) {
     return h("button", { type: "button", class: "chipbtn" + (on ? " on" : ""), "aria-pressed": String(on), onclick: () => salvar({ sintomas: on ? reg.sintomas.filter((x) => x !== s) : (reg.sintomas || []).concat(s) }) }, s);
   }))));
 
-  if (ciclo) {
-    const prev = previsaoCiclo();
-    root.appendChild(bloco("Ciclo menstrual", h("div", { class: "chips" }, FLUXO.map((f) => h("button", { type: "button", class: "chipbtn" + ((reg.fluxo || 0) === f.v ? " on" : ""), "aria-pressed": String((reg.fluxo || 0) === f.v), onclick: () => salvar({ fluxo: f.v }) }, f.l))),
-      prev ? h("div", { class: "soft-box" }, h("div", null, "Próxima menstruação prevista: ", h("strong", null, dia(prev.proximo)), " (", rel(prev.proximo), ")"),
-        h("small", { class: "muted" }, "Ciclo médio de " + prev.media + " dias" + (prev.baseadoEm ? ", calculado com seus últimos " + prev.baseadoEm + " ciclos." : " (padrão: registre mais ciclos para personalizar)."))) : h("p", { class: "muted small" }, "Marque o fluxo nos dias da menstruação para eu estimar o próximo ciclo."),
-      h("small", { class: "muted" }, "Estimativa só para organização. Não substitui orientação médica.")));
-  }
-
   const campo = (rotulo, key, ph, rows) => {
-    const ta = h("textarea", { class: "input", rows, placeholder: ph, "aria-label": rotulo, value: reg[key] || "", onblur: (e) => { if (e.target.value !== (reg[key] || "")) salvar({ [key]: e.target.value }); } });
+    const ta = h("textarea", { class: "input", rows, placeholder: ph, "aria-label": rotulo, value: reg[key] || "", onblur: (e) => { if (e.target.value !== (reg[key] || "")) db.quiet(() => salvar({ [key]: e.target.value })); } });
     return bloco(rotulo, ta);
   };
   root.appendChild(campo("Gratidão do dia", "gratidao", "Uma coisa boa de hoje…", 2));

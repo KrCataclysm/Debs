@@ -1,20 +1,21 @@
 /* Dados: cache local + fila de gravações + sincronização com o Supabase (offline-first). */
 import { SUPABASE_URL, SUPABASE_KEY } from "./config.js";
 import { mergeConfig } from "./theme.js";
+import { markFresh } from "./lib.js";
 
 export const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: "lirio:auth" }
 });
 
 export const TABLES = ["perfis", "rotinas", "rotina_registros", "tarefas", "notas", "habitos", "habito_checks", "transacoes", "contas",
-  "metas", "materias", "estudos", "datas_importantes", "bemestar", "compras", "refeicoes"];
+  "metas", "materias", "estudos", "aulas", "foco", "datas_importantes", "bemestar", "compras", "refeicoes"];
 const NATURAL = { rotina_registros: "rotina_id,ciclo_inicio", habito_checks: "habito_id,dia", bemestar: "user_id,dia" };
 const pk = (t) => (t === "perfis" ? "user_id" : "id");
 /* o que apagar localmente junto (o banco faz isso por cascade) */
-const CASCADE = { rotinas: [["rotina_registros", "rotina_id"]], habitos: [["habito_checks", "habito_id"]] };
-const SETNULL = { materias: [["estudos", "materia_id"]] };
+const CASCADE = { rotinas: [["rotina_registros", "rotina_id"]], habitos: [["habito_checks", "habito_id"]], materias: [["aulas", "materia_id"]] };
+const SETNULL = { materias: [["estudos", "materia_id"], ["foco", "materia_id"]] };
 
-const S = { user: null, data: {}, queue: [], online: navigator.onLine, syncing: false, lastSync: null, error: null };
+const S = { user: null, data: {}, queue: [], online: navigator.onLine, syncing: false, lastSync: null, error: null, ready: false };
 TABLES.forEach((t) => (S.data[t] = []));
 const subs = new Set();
 let mutSeq = 0; const touched = new Map(); /* "tabela|id" -> ordem da última mudança local */
@@ -31,7 +32,7 @@ function notify(kind = "local") {
 }
 
 export const user = () => S.user;
-export const status = () => ({ online: S.online, syncing: S.syncing, pending: S.queue.length, lastSync: S.lastSync, error: S.error });
+export const status = () => ({ online: S.online, syncing: S.syncing, pending: S.queue.length, lastSync: S.lastSync, error: S.error, ready: S.ready });
 export const rows = (t) => S.data[t];
 export const byId = (t, id) => S.data[t].find((r) => r[pk(t)] === id);
 export const uid = () => (crypto.randomUUID ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => { const r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 3) | 8).toString(16); }));
@@ -68,14 +69,17 @@ function enqueue(op) {
   } else S.queue = S.queue.filter((o) => !same(o));
   S.queue.push(op);
 }
-function commit() { persist(); notify("local"); flush(); }
+/* gravação silenciosa: não redesenha a tela (usada em campos de texto para não roubar o foco) */
+let quietDepth = 0;
+export function quiet(fn) { quietDepth++; try { return fn(); } finally { quietDepth--; } }
+function commit() { persist(); notify(quietDepth ? "sync" : "local"); flush(); }
 
 export function add(t, row) {
   const now = new Date().toISOString();
   const base = { user_id: S.user.id, created_at: now, updated_at: now };
   if (t !== "perfis") base.id = uid();
   const r = Object.assign(base, row);
-  S.data[t].push(r); touch(t, r[pk(t)]); enqueue({ t, k: "up", row: r }); commit(); return r;
+  S.data[t].push(r); touch(t, r[pk(t)]); if (t !== "perfis") markFresh(r.id); enqueue({ t, k: "up", row: r }); commit(); return r;
 }
 export function patch(t, id, p) {
   const r = byId(t, id); if (!r) return null;
@@ -179,7 +183,7 @@ export async function pull(force = false) {
   } catch (e) {
     if (isNet(e) || isAuth(e)) S.error = "Sem conexão com o servidor."; else { console.error(e); S.error = "Não consegui sincronizar agora."; }
     notify("sync");
-  } finally { pulling = false; }
+  } finally { pulling = false; if (!S.ready) { S.ready = true; notify("local"); } }
 }
 
 /* ---------- autenticação ---------- */
@@ -188,7 +192,11 @@ async function enter(u) {
   if (S.user && S.user.id === u.id) return;
   S.user = { id: u.id, email: u.email };
   try { localStorage.setItem(kLast, JSON.stringify(S.user)); } catch (e) { /* ignore */ }
-  resetMemory(); loadLocal(); notify("auth");
+  resetMemory(); loadLocal();
+  /* aparelho novo: segura a tela até a primeira sincronização, para não piscar vazio */
+  let temCache = false; try { temCache = !!localStorage.getItem(kData()); } catch (e) { /* ignore */ }
+  S.ready = temCache || !navigator.onLine;
+  notify("auth");
   pull(true);
 }
 export async function init(onRecovery) {
@@ -211,10 +219,9 @@ export async function signIn(email, password) {
   const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) throw new Error(/invalid login/i.test(error.message) ? "E-mail ou senha incorretos." : /confirm/i.test(error.message) ? "Confirme seu e-mail antes de entrar (veja a caixa de entrada)." : error.message);
 }
-export async function signUp(email, password, nome) {
-  const { data, error } = await sb.auth.signUp({ email, password, options: { data: { nome }, emailRedirectTo: location.origin } });
-  if (error) throw new Error(/already/i.test(error.message) ? "Esse e-mail já tem cadastro. Tente entrar." : error.message);
-  return { needsConfirm: !data.session };
+export async function signInMagic(email) {
+  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: location.origin } });
+  if (error) throw new Error(/rate|seconds/i.test(error.message) ? "Aguarde um minutinho antes de pedir outro link." : /not allowed|signup/i.test(error.message) ? "Esse e-mail não tem acesso." : "Não consegui enviar o link agora.");
 }
 export async function resetPassword(email) {
   const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin });

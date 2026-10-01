@@ -1,10 +1,10 @@
-import { h, icon, item, chip, empty, seg, monthNav, formSheet, sheet, progress, brl, num, iso, hoje, parse, dia, rel, between, add, rerender } from "../lib.js";
+import { h, icon, item, chip, empty, seg, monthNav, formSheet, sheet, progress, brl, num, iso, hoje, parse, dia, rel, between, add, MESES, rerender } from "../lib.js";
 import * as db from "../store.js";
 
 let aba = "lanc", mes = null;
-const CAT_GASTO = ["Alimentação", "Transporte", "Lazer", "Beleza", "Saúde", "Estudos", "Casa", "Compras", "Assinaturas", "Presentes", "Outros"];
-const CAT_RECEITA = ["Mesada", "Salário", "Extra", "Presente", "Outros"];
-const EMO = { Alimentação: "🍽️", Transporte: "🚌", Lazer: "🎬", Beleza: "💄", Saúde: "💊", Estudos: "📚", Casa: "🏠", Compras: "🛍️", Assinaturas: "📺", Presentes: "🎁", Outros: "✨", Mesada: "💝", Salário: "💼", Extra: "⭐", Presente: "🎀" };
+const CAT_GASTO = ["Alimentação", "Transporte", "Faculdade", "Lazer", "Beleza", "Saúde", "Casa", "Compras", "Assinaturas", "Presentes", "Outros"];
+const CAT_RECEITA = ["Salário", "Extra", "Mesada", "Presente", "Outros"];
+const CIC = { Alimentação: "utensils", Transporte: "bus", Faculdade: "cap", Lazer: "film", Beleza: "sparkles", Saúde: "pill", Casa: "home", Compras: "bag", Assinaturas: "tv", Presentes: "gift", Outros: "more", Salário: "briefcase", Extra: "star", Mesada: "heart", Presente: "gift" };
 
 export function editarLancamento(x, tipoIni = "gasto") {
   formSheet({
@@ -14,8 +14,8 @@ export function editarLancamento(x, tipoIni = "gasto") {
     fields: [
       { key: "tipo", label: "Tipo", type: "chips", options: [{ v: "gasto", l: "Gasto" }, { v: "receita", l: "Entrada" }] },
       { key: "valor", label: "Valor (R$)", type: "money", required: true },
-      { key: "catG", label: "Categoria", type: "select", options: CAT_GASTO.map((c) => ({ v: c, l: EMO[c] + " " + c })), showIf: (s) => s.tipo === "gasto" },
-      { key: "catR", label: "Categoria", type: "select", options: CAT_RECEITA.map((c) => ({ v: c, l: EMO[c] + " " + c })), showIf: (s) => s.tipo === "receita" },
+      { key: "catG", label: "Categoria", type: "select", options: CAT_GASTO.map((c) => ({ v: c, l: c })), showIf: (s) => s.tipo === "gasto" },
+      { key: "catR", label: "Categoria", type: "select", options: CAT_RECEITA.map((c) => ({ v: c, l: c })), showIf: (s) => s.tipo === "receita" },
       { key: "descricao", label: "Descrição (opcional)", maxlength: 120 },
       { key: "data", label: "Data", type: "date", required: true }
     ],
@@ -89,7 +89,7 @@ function somar(m) {
 export function render(root) {
   const t = hoje();
   if (!mes) mes = new Date(t.getFullYear(), t.getMonth(), 1);
-  root.appendChild(h("div", { class: "page-head" }, h("div", null, h("h1", null, "Finanças"), h("p", { class: "muted" }, "Seu dinheiro, com carinho e clareza.")),
+  root.appendChild(h("div", { class: "page-head" }, h("div", null, h("p", { class: "eyebrow" }, "Seu dinheiro"), h("h1", null, "Finanças"), h("p", { class: "muted" }, "Seu dinheiro, com carinho e clareza.")),
     h("button", { class: "btn primary", type: "button", onclick: () => (aba === "contas" ? editarConta() : aba === "metas" ? editarMeta(null, "financeira") : editarLancamento()) }, icon("plus", 18), h("span", null, aba === "contas" ? "Nova conta" : aba === "metas" ? "Nova meta" : "Lançar"))));
   root.appendChild(seg([{ v: "lanc", l: "Lançamentos" }, { v: "contas", l: "Contas" }, { v: "metas", l: "Metas" }], aba, (v) => { aba = v; rerender(); }));
 
@@ -102,16 +102,22 @@ export function render(root) {
       h("div", { class: "stat" }, h("small", null, "Entradas"), h("strong", { class: "pos" }, brl(ent))),
       h("div", { class: "stat" }, h("small", null, "Gastos"), h("strong", { class: "neg" }, brl(sai))),
       h("div", { class: "stat" }, h("small", null, "Saldo"), h("strong", { class: ent - sai >= 0 ? "pos" : "neg" }, brl(ent - sai)))));
+    const m6 = Array.from({ length: 6 }, (_, i) => new Date(mes.getFullYear(), mes.getMonth() - 5 + i, 1));
+    const tot6 = m6.map((m) => ({ m, v: db.rows("transacoes").filter((x) => x.tipo === "gasto" && x.data.slice(0, 7) === iso(m).slice(0, 7)).reduce((s, x) => s + Number(x.valor), 0) }));
+    const mx6 = Math.max(1, ...tot6.map((o) => o.v));
+    if (tot6.some((o) => o.v > 0)) root.appendChild(h("section", { class: "card stack" }, h("h3", null, "Gastos mês a mês"),
+      h("div", { class: "bars money", role: "img", "aria-label": "Gastos dos últimos 6 meses" }, tot6.map((o) => h("div", { class: "bar-col", title: MESES[o.m.getMonth()] + ": " + brl(o.v) },
+        h("span", { class: "bar-val" }, o.v ? brl(o.v).replace(/\s/g, "").replace("R$", "") : ""), h("i", { class: iso(o.m) === iso(mes) ? "cur" : "", style: { height: Math.max(5, (o.v / mx6) * 100) + "%" } }), h("small", null, MESES[o.m.getMonth()].slice(0, 3)))))));
     const porCat = {}; lista.filter((x) => x.tipo === "gasto").forEach((x) => (porCat[x.categoria] = (porCat[x.categoria] || 0) + Number(x.valor)));
     const cats = Object.entries(porCat).sort((a, b) => b[1] - a[1]);
-    if (cats.length) root.appendChild(h("section", { class: "card stack" }, h("h3", null, "Para onde foi"), cats.map(([c, v]) => h("div", { class: "catrow" }, h("span", null, (EMO[c] || "✨") + " " + c), progress(v / cats[0][1]), h("strong", null, brl(v))))));
+    if (cats.length) root.appendChild(h("section", { class: "card stack" }, h("h3", null, "Para onde foi"), cats.map(([c, v]) => h("div", { class: "catrow" }, h("span", { class: "row gap" }, icon(CIC[c] || "more", 16), c), progress(v / cats[0][1]), h("strong", null, brl(v))))));
     if (!lista.length) root.appendChild(empty("Nenhum lançamento neste mês."));
     else {
       let ult = "";
       const card = h("div", { class: "card flush" });
       lista.forEach((x) => {
         if (x.data !== ult) { ult = x.data; card.appendChild(h("div", { class: "daysep" }, dia(parse(x.data)) + " · " + rel(parse(x.data)))); }
-        card.appendChild(item({ lead: h("span", { class: "roundico" }, EMO[x.categoria] || "✨"), title: x.descricao || x.categoria, sub: x.categoria, trail: h("strong", { class: x.tipo === "gasto" ? "neg" : "pos" }, (x.tipo === "gasto" ? "−" : "+") + brl(x.valor)), onclick: () => editarLancamento(x) }));
+        card.appendChild(item({ lead: h("span", { class: "roundico" }, icon(CIC[x.categoria] || "more", 18)), title: x.descricao || x.categoria, sub: x.categoria, trail: h("strong", { class: x.tipo === "gasto" ? "neg" : "pos" }, (x.tipo === "gasto" ? "−" : "+") + brl(x.valor)), onclick: () => editarLancamento(x) }));
       });
       root.appendChild(card);
     }

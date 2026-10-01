@@ -21,7 +21,7 @@ function editarSlot(dia, tipo, atual) {
 export function render(root) {
   const t = hoje();
   if (!semana) semana = add(t, -((t.getDay() + 6) % 7));
-  root.appendChild(h("div", { class: "page-head" }, h("div", null, h("h1", null, "Listas"), h("p", { class: "muted" }, "Mercado, desejos e cardápio da semana."))));
+  root.appendChild(h("div", { class: "page-head" }, h("div", null, h("p", { class: "eyebrow" }, "Organização"), h("h1", null, "Listas"), h("p", { class: "muted" }, "Mercado, desejos e cardápio da semana."))));
   root.appendChild(seg([{ v: "mercado", l: "🛒 Mercado" }, { v: "desejo", l: "🎀 Desejos" }, { v: "cardapio", l: "🍽️ Cardápio" }], aba, (v) => { aba = v; rerender(); }));
 
   if (aba === "mercado" || aba === "desejo") {
