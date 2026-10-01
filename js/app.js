@@ -51,7 +51,7 @@ function authScreen() {
   const aviso = (t, bom) => { msg.hidden = bom; ok.hidden = !bom; (bom ? ok : msg).textContent = t; };
   const form = h("form", { class: "stack", onsubmit: async (e) => {
     e.preventDefault(); aviso("", true); ok.hidden = true; btn.disabled = true; btn.classList.add("loading");
-    try { try { localStorage.setItem("lirio:email", email.value.trim()); } catch (x) { /* ignore */ } await db.signIn(email.value.trim(), senha.value); }
+    try { try { localStorage.setItem("lirio:email", email.value.trim()); } catch (x) { /* ignore */ } await db.signIn(email.value.trim(), senha.value); history.replaceState(null, "", "#/hoje"); }
     catch (ex) { aviso(ex.message, false); } finally { btn.disabled = false; btn.classList.remove("loading"); }
   } },
   h("div", { class: "field" }, h("label", { class: "flabel", for: "a-email" }, "E-mail"), email),
