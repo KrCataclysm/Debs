@@ -10,12 +10,6 @@ const MODULOS = [
   ["listas", "Listas", "Mercado, desejos e cardápio"], ["datas", "Datas importantes", "Aniversários e compromissos"], ["resumo", "Resumo", "Relatório mensal"]
 ];
 
-function trocarSenha() {
-  formSheet({ title: "Trocar senha", submitLabel: "Salvar nova senha", values: { a: "", b: "" },
-    fields: [{ key: "a", label: "Nova senha (mínimo 6 caracteres)", type: "password", required: true }, { key: "b", label: "Repita a nova senha", type: "password", required: true }],
-    onSubmit: async (s) => { if (s.a.length < 6) throw new Error("Use pelo menos 6 caracteres."); if (s.a !== s.b) throw new Error("As senhas não conferem."); await db.updatePassword(s.a); toast("Senha alterada ✔"); } });
-}
-
 function importarLegado() {
   sheet("Importar da Agenda GQP (antiga)", (close) => {
     const ta = h("textarea", { class: "input", rows: 5, placeholder: "Cole aqui o conteúdo exportado, ou escolha o arquivo abaixo" });
@@ -102,8 +96,7 @@ export function render(root, { cfg }) {
       h("button", { class: "btn ghost", type: "button", onclick: importarLegado }, "Importar da agenda antiga"))));
 
   root.appendChild(sec("Conta", "user", h("div", { class: "row gap wrap" },
-    h("button", { class: "btn ghost", type: "button", onclick: trocarSenha }, "Trocar senha"),
-    h("button", { class: "btn danger-ghost", type: "button", onclick: async () => { if (await confirmBox(st.pending ? "Há alterações ainda não enviadas. Conecte-se à internet antes de sair para não perdê-las." : "Você precisará entrar de novo.", { ok: "Sair", title: "Sair da conta?", danger: !!st.pending })) db.signOut(); } }, icon("logout", 18), h("span", null, "Sair")))));
+    h("button", { class: "btn danger-ghost", type: "button", onclick: async () => { if (await confirmBox(st.pending ? "Há alterações ainda não enviadas. Conecte-se à internet antes de sair para não perdê-las." : "Para voltar, você vai precisar do seu link de acesso.", { ok: "Sair", title: "Sair da conta?", danger: !!st.pending })) db.signOut(); } }, icon("logout", 18), h("span", null, "Sair")))));
 
   root.appendChild(h("p", { class: "note center-text" }, "Lírio · feito com carinho para a Débora"));
 }

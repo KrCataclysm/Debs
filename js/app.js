@@ -39,43 +39,28 @@ let shell = null, lastCfg = "", rota = "hoje";
 const go = (id) => { if (location.hash !== "#/" + id) location.hash = "#/" + id; else renderPage(true); };
 const enabled = (cfg) => NAV.filter((n) => !n.mod || cfg.modulos[n.mod]);
 const currentRoute = () => (location.hash.replace(/^#\//, "") || "hoje");
-const lembrado = () => { try { return localStorage.getItem("lirio:email") || ""; } catch (e) { return ""; } };
 
-/* ---------- entrada (acesso só dela) ---------- */
+/* ---------- boas-vindas (acesso só dela, por link) ---------- */
 function authScreen() {
-  const email = h("input", { class: "input", type: "email", name: "email", id: "a-email", autocomplete: "username", inputmode: "email", required: true, placeholder: "seu@email.com", value: lembrado(), autocapitalize: "none", spellcheck: "false" });
-  const senha = h("input", { class: "input", type: "password", name: "password", id: "a-senha", autocomplete: "current-password", required: true, placeholder: "Sua senha", enterkeyhint: "go" });
-  const olho = h("button", { class: "eye", type: "button", "aria-label": "Mostrar senha", onclick: () => { const v = senha.type === "password"; senha.type = v ? "text" : "password"; olho.setAttribute("aria-label", v ? "Ocultar senha" : "Mostrar senha"); olho.classList.toggle("on", v); } }, icon("eye", 18));
-  const msg = h("div", { class: "form-err", role: "alert", hidden: true }), ok = h("div", { class: "form-ok", role: "status", hidden: true });
-  const btn = h("button", { class: "btn primary block big", type: "submit" }, h("span", null, "Entrar"));
-  const aviso = (t, bom) => { msg.hidden = bom; ok.hidden = !bom; (bom ? ok : msg).textContent = t; };
+  const msg = h("div", { class: "form-err", role: "alert", hidden: true });
+  const chave = h("input", { class: "input", type: "password", id: "a-chave", autocomplete: "off", placeholder: "Cole aqui a sua chave", autocapitalize: "none", spellcheck: "false", enterkeyhint: "go" });
+  const campo = h("div", { class: "field", hidden: !!db.chaveGuardada() }, h("label", { class: "flabel", for: "a-chave" }, "Sua chave de acesso"), chave);
+  const btn = h("button", { class: "btn primary block big", type: "submit" }, h("span", null, "Abrir meu espaço"));
   const form = h("form", { class: "stack", onsubmit: async (e) => {
-    e.preventDefault(); aviso("", true); ok.hidden = true; btn.disabled = true; btn.classList.add("loading");
-    try { try { localStorage.setItem("lirio:email", email.value.trim()); } catch (x) { /* ignore */ } await db.signIn(email.value.trim(), senha.value); history.replaceState(null, "", "#/hoje"); }
-    catch (ex) { aviso(ex.message, false); } finally { btn.disabled = false; btn.classList.remove("loading"); }
-  } },
-  h("div", { class: "field" }, h("label", { class: "flabel", for: "a-email" }, "E-mail"), email),
-  h("div", { class: "field" }, h("label", { class: "flabel", for: "a-senha" }, "Senha"), h("div", { class: "pw" }, senha, olho)),
-  msg, ok, btn);
-  const link = h("button", { class: "link", type: "button", onclick: async () => {
-    if (!email.value.trim()) { aviso("Digite seu e-mail primeiro.", false); email.focus(); return; }
-    try { await db.signInMagic(email.value.trim()); aviso("Enviei um link de acesso para o seu e-mail.", true); } catch (ex) { aviso(ex.message, false); }
-  } }, "Receber link de acesso por e-mail");
-  const esq = h("button", { class: "link", type: "button", onclick: async () => {
-    if (!email.value.trim()) { aviso("Digite seu e-mail primeiro.", false); email.focus(); return; }
-    try { await db.resetPassword(email.value.trim()); aviso("Enviei o link para criar uma nova senha.", true); } catch (ex) { aviso(ex.message, false); }
-  } }, "Esqueci minha senha");
+    e.preventDefault(); msg.hidden = true; btn.disabled = true; btn.classList.add("loading");
+    try { await db.entrarComChave(chave.value.trim() || undefined); history.replaceState(null, "", "#/hoje"); }
+    catch (ex) { campo.hidden = false; msg.textContent = ex.message; msg.hidden = false; chave.focus(); } finally { btn.disabled = false; btn.classList.remove("loading"); }
+  } }, campo, msg, btn);
   return h("div", { class: "auth-wrap" },
     h("span", { class: "auth-flower", "aria-hidden": "true" }),
-    h("main", { class: "auth-card" },
-      h("img", { src: "icons/icon-192.png", alt: "", class: "auth-logo", width: 76, height: 76 }),
-      h("h1", null, "Lírio"), h("p", { class: "auth-sub" }, "Seu espaço, no seu ritmo."),
-      form, h("div", { class: "auth-links" }, esq, link),
-      h("p", { class: "auth-foot" }, "Acesso exclusivo. Seus dados ficam só com você.")));
-}
-function novaSenha() {
-  formSheet({ title: "Crie uma nova senha", submitLabel: "Salvar", values: { a: "" }, fields: [{ key: "a", label: "Nova senha (mínimo 6 caracteres)", type: "password", required: true }],
-    onSubmit: async (s) => { if (s.a.length < 6) throw new Error("Use pelo menos 6 caracteres."); await db.updatePassword(s.a); toast("Senha atualizada"); } });
+    h("main", { class: "auth-card welcome" },
+      h("img", { src: "icons/icon-192.png", alt: "", class: "auth-logo", width: 84, height: 84 }),
+      h("p", { class: "welcome-kicker" }, "Lírio"),
+      h("h1", null, "Oi, Débora"),
+      h("p", { class: "welcome-lead" }, "Este espaço foi feito especialmente pra você."),
+      h("p", { class: "auth-sub" }, "Sua rotina, seus estudos e seus dias, no seu ritmo, e igual em qualquer aparelho."),
+      form,
+      h("p", { class: "auth-foot" }, "Feito com carinho · só seu")));
 }
 
 /* ---------- casca ---------- */
@@ -142,7 +127,7 @@ function updateStatus() {
 
 /* ---------- inicialização ---------- */
 bootTheme();
-window.addEventListener("hashchange", () => renderPage(true));
+window.addEventListener("hashchange", () => { db.lerChaveDoLink(); renderPage(true); });
 window.addEventListener("lirio:rerender", () => renderPage(false));
 window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); window.__lirioInstall = e; });
 
@@ -157,7 +142,8 @@ db.subscribe((kind) => {
 });
 
 app.innerHTML = '<div class="splash"><span class="splash-flower"></span></div>';
-db.init(novaSenha).then(() => renderPage(true)).catch((e) => { console.error(e); renderPage(true); });
+db.lerChaveDoLink();
+db.init().then(() => renderPage(true)).catch((e) => { console.error(e); renderPage(true); });
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").then((reg) => {

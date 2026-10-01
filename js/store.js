@@ -1,10 +1,10 @@
 /* Dados: cache local + fila de gravações + sincronização com o Supabase (offline-first). */
-import { SUPABASE_URL, SUPABASE_KEY } from "./config.js";
+import { SUPABASE_URL, SUPABASE_KEY, ACESSO_EMAIL } from "./config.js";
 import { mergeConfig } from "./theme.js";
 import { markFresh } from "./lib.js";
 
 export const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: "lirio:auth" }
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: "lirio:auth" }
 });
 
 export const TABLES = ["perfis", "rotinas", "rotina_registros", "tarefas", "notas", "habitos", "habito_checks", "transacoes", "contas",
@@ -201,9 +201,8 @@ async function enter(u) {
   notify("auth");
   pull(true);
 }
-export async function init(onRecovery) {
+export async function init() {
   sb.auth.onAuthStateChange((ev, ses) => {
-    if (ev === "PASSWORD_RECOVERY") onRecovery && onRecovery();
     if (ev === "SIGNED_OUT") { S.user = null; resetMemory(); notify("auth"); }
     if ((ev === "SIGNED_IN" || ev === "TOKEN_REFRESHED" || ev === "USER_UPDATED") && ses && ses.user) setTimeout(() => enter(ses.user), 0);
   });
@@ -217,26 +216,27 @@ export async function init(onRecovery) {
     try { const last = JSON.parse(localStorage.getItem(kLast) || "null"); if (last) await enter(last); } catch (e) { /* ignore */ }
   }
 }
-export async function signIn(email, password) {
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) throw new Error(/invalid login/i.test(error.message) ? "E-mail ou senha incorretos." : /confirm/i.test(error.message) ? "Confirme seu e-mail antes de entrar (veja a caixa de entrada)." : error.message);
+const kChave = "lirio:chave";
+export const chaveGuardada = () => { try { return localStorage.getItem(kChave) || ""; } catch (e) { return ""; } };
+/* O link dela traz a chave depois do # (nunca vai para o servidor). Guardamos e limpamos o endereço. */
+export function lerChaveDoLink() {
+  const m = /^#k=([^&]+)/.exec(location.hash);
+  if (!m) return;
+  try { localStorage.setItem(kChave, decodeURIComponent(m[1])); } catch (e) { /* ignore */ }
+  history.replaceState(null, "", location.pathname + location.search);
 }
-export async function signInMagic(email) {
-  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: location.origin } });
-  if (error) throw new Error(/rate|seconds/i.test(error.message) ? "Aguarde um minutinho antes de pedir outro link." : /not allowed|signup/i.test(error.message) ? "Esse e-mail não tem acesso." : "Não consegui enviar o link agora.");
-}
-export async function resetPassword(email) {
-  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin });
-  if (error) throw new Error(error.message);
-}
-export async function updatePassword(password) {
-  const { error } = await sb.auth.updateUser({ password });
-  if (error) throw new Error(error.message);
+export async function entrarComChave(chave) {
+  const k = chave || chaveGuardada();
+  if (!k) throw new Error("Cole a chave que você recebeu junto com o link.");
+  const { error } = await sb.auth.signInWithPassword({ email: ACESSO_EMAIL, password: k });
+  if (error) throw new Error(/invalid login/i.test(error.message) ? "Essa chave não está certa. Confira se copiou inteira." : error.message);
+  try { localStorage.setItem(kChave, k); } catch (e) { /* ignore */ }
 }
 export async function signOut() {
   await flush();
   const id = S.user && S.user.id;
   await sb.auth.signOut();
+  try { localStorage.removeItem(kChave); } catch (e) { /* ignore */ }
   try { if (id && !S.queue.length) { localStorage.removeItem("lirio:" + id + ":data"); localStorage.removeItem("lirio:" + id + ":q"); } localStorage.removeItem(kLast); } catch (e) { /* ignore */ }
   S.user = null; resetMemory(); notify("auth");
 }
