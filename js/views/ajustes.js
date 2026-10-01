@@ -1,6 +1,7 @@
 import { h, icon, seg, sheet, formSheet, confirmBox, toast, download, chip, rerender, iso, hoje } from "../lib.js";
 import * as db from "../store.js";
 import { TEMAS, FONTES_TEXTO, FONTES_TITULO } from "../theme.js";
+import * as push from "../push.js";
 
 const MODULOS = [
   ["rotina", "Rotina", "Atividades que se repetem"], ["tarefas", "Tarefas", "Lista de afazeres com prazo"], ["calendario", "Calendário", "Visão do mês"],
@@ -58,6 +59,27 @@ export function render(root, { cfg }) {
     h("div", { class: "field" }, h("span", { class: "flabel" }, "Tamanho do texto"), seg([{ v: "p", l: "Pequeno" }, { v: "m", l: "Médio" }, { v: "g", l: "Grande" }], cfg.tamanho, (v) => set({ tamanho: v }))),
     h("div", { class: "field" }, h("span", { class: "flabel" }, "Cantos"), seg([{ v: "reto", l: "Retos" }, { v: "suave", l: "Suaves" }, { v: "redondo", l: "Redondos" }], cfg.cantos, (v) => set({ cantos: v }))),
     h("div", { class: "preview" }, h("h4", null, "Pré-visualização"), h("p", null, "Assim ficam seus títulos e textos."), h("div", { class: "row gap" }, h("button", { class: "btn primary sm", type: "button" }, "Botão"), chip("Etiqueta", "soft"), chip("Pronto", "ok")))));
+
+  /* notificações */
+  const setN = (p) => db.setConfig({ notif: Object.assign({}, cfg.notif, p) });
+  const boxN = h("div", { class: "stack" }, h("p", { class: "muted small" }, "Verificando este aparelho…"));
+  push.estado().then((st) => {
+    boxN.innerHTML = "";
+    if (!st.ok) { boxN.appendChild(h("p", { class: "muted small" }, st.motivo === "ios-instalar" ? "No iPhone, primeiro instale o app: toque em Compartilhar e em “Adicionar à Tela de Início”. Depois abra o Lírio pelo ícone e ative as notificações aqui." : st.motivo === "sem-sw" ? "O app ainda está se preparando para funcionar offline. Recarregue a página e volte aqui." : "Este navegador não oferece notificações.")); return; }
+    boxN.appendChild(h("div", { class: "row between wrap gap" }, h("div", { class: "row gap" }, chip(st.perm === "denied" ? "Bloqueadas no navegador" : st.ativo ? "Ativas neste aparelho" : "Desligadas neste aparelho", st.ativo ? "ok" : st.perm === "denied" ? "bad" : "idle")),
+      st.perm !== "denied" && !st.ativo ? h("button", { class: "btn primary", type: "button", onclick: async (e) => { const b = e.currentTarget; b.disabled = true; try { await push.ativar(); setN({ ativo: true }); toast("Notificações ativadas"); } catch (x) { toast(x.message, 4200); rerender(); } } }, icon("bell", 18), h("span", null, "Ativar neste aparelho")) : null));
+    if (st.perm === "denied") boxN.appendChild(h("p", { class: "muted small" }, "Libere as notificações do Lírio nas configurações do site (cadeado ao lado do endereço) e volte aqui."));
+    boxN.appendChild(h("div", { class: "grid2" },
+      h("div", { class: "field" }, h("label", { class: "flabel", for: "n-manha" }, "Resumo da manhã"), h("input", { class: "input", id: "n-manha", type: "time", value: cfg.notif.manha, onchange: (e) => setN({ manha: e.target.value || "08:00" }) })),
+      h("div", { class: "field" }, h("label", { class: "flabel", for: "n-noite" }, "Lembrete da noite"), h("input", { class: "input", id: "n-noite", type: "time", value: cfg.notif.noite, onchange: (e) => setN({ noite: e.target.value || "20:30" }) }))));
+    boxN.appendChild(h("div", { class: "switches" }, [["aulas", "Aulas", "Aviso 30 minutos antes de cada aula"], ["contas", "Contas e provas", "No resumo da manhã: o que vence hoje ou amanhã"], ["datas", "Datas importantes", "Aniversários e datas especiais do dia"], ["habitos", "Hábitos", "À noite, os que ainda faltam"]]
+      .map(([k, nome, desc]) => h("label", { class: "switch-row split" }, h("span", null, h("strong", null, nome), h("small", { class: "muted" }, desc)), h("input", { type: "checkbox", checked: cfg.notif[k] !== false, onchange: (e) => setN({ [k]: e.target.checked }) }), h("span", { class: "switch" })))));
+    if (st.ativo) boxN.appendChild(h("div", { class: "row gap wrap" },
+      h("button", { class: "btn ghost", type: "button", onclick: async (e) => { const b = e.currentTarget; b.disabled = true; try { await push.testar(); toast("Teste enviado. Deve chegar em instantes."); } catch (x) { toast(x.message); } b.disabled = false; } }, "Enviar notificação de teste"),
+      h("button", { class: "btn danger-ghost", type: "button", onclick: async () => { try { const restam = await push.desativar(); if (!restam) setN({ ativo: false }); toast("Notificações desligadas neste aparelho"); rerender(); } catch (x) { toast(x.message); } } }, "Desligar neste aparelho")));
+    boxN.appendChild(h("p", { class: "note" }, "Os avisos são enviados pelo servidor, então chegam mesmo com o app fechado."));
+  });
+  root.appendChild(sec("Notificações", "bell", boxN));
 
   root.appendChild(sec("Módulos", "sliders", h("p", { class: "muted small" }, "Ligue só o que faz sentido para você. Nada é apagado ao desligar."),
     h("div", { class: "switches" }, MODULOS.map(([k, nome, desc]) => h("label", { class: "switch-row split" }, h("span", null, h("strong", null, nome), h("small", { class: "muted" }, desc)),

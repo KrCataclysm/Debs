@@ -228,6 +228,11 @@ textarea.input { resize: vertical; line-height: 1.55; } select.input { appearanc
 .tl.now { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 25%, transparent), var(--sh2); animation: nowpulse 2.4s ease-in-out infinite; } .tl.past { opacity: .5; }
 @keyframes nowpulse { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 10%, transparent), var(--sh2); } }
 
+/* convite "a um toque" */
+.card.tip { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; background: linear-gradient(135deg, var(--soft), var(--surface)); border-color: color-mix(in srgb, var(--ac) 22%, var(--line)); }
+.card.tip .row { grid-column: 1 / -1; } .tip-t p { margin-top: 2px; } .steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; color: var(--ink2); }
+@media (min-width: 720px) { .card.tip { grid-template-columns: auto 1fr auto; } .card.tip .row { grid-column: auto; } }
+
 /* ---------- hábitos / bem-estar ---------- */
 .week { display: flex; gap: 4px; } .wd { width: 27px; height: 27px; border-radius: 50%; border: 1px solid var(--line2); background: transparent; font-size: .66rem; font-weight: 800; color: var(--ink3); cursor: pointer; padding: 0; transition: all .25s var(--spring); }
 .wd:hover:not(:disabled) { transform: scale(1.12); } .wd.on { background: var(--ac); border-color: var(--ac); color: var(--on-ac); } .wd.today:not(.on) { border-color: var(--ac); color: var(--ac); } .wd:disabled { opacity: .3; cursor: default; }

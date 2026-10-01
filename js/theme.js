@@ -17,6 +17,7 @@ const PESOS = { "Plus Jakarta Sans": "400;500;600;700;800", Nunito: "400;500;600
 export const CONFIG_PADRAO = {
   tema: "lirio", accent: null, fonteTexto: "Plus Jakarta Sans", fonteTitulo: "Fraunces",
   modo: "auto", tamanho: "m", cantos: "suave",
+  notif: { ativo: false, manha: "08:00", noite: "20:30", aulas: true, contas: true, datas: true, habitos: true },
   modulos: { rotina: true, tarefas: true, calendario: true, habitos: true, bemestar: true, financas: true, estudos: true, notas: true, listas: true, datas: true, resumo: true }
 };
 
@@ -24,6 +25,7 @@ export function mergeConfig(c) {
   const x = Object.assign({}, CONFIG_PADRAO, c || {});
   x.modulos = Object.assign({}, CONFIG_PADRAO.modulos, (c && c.modulos) || {});
   delete x.modulos.ciclo;
+  x.notif = Object.assign({}, CONFIG_PADRAO.notif, (c && c.notif) || {});
   return x;
 }
 

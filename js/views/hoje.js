@@ -1,9 +1,10 @@
-import { h, icon, item, check, chip, empty, petals, meta, areaTag, saudacao, hoje, iso, add, parse, dia, rel, between, brl, hm, DIAS, MESES } from "../lib.js";
+import { h, icon, item, check, chip, empty, petals, meta, areaTag, sheet, toast, rerender, saudacao, hoje, iso, add, parse, dia, rel, between, brl, hm, DIAS, MESES } from "../lib.js";
 import * as db from "../store.js";
 import { rotinasAtivas, cicloAtual, statusCiclo, toggleCiclo, atrasadas, checksIdx, sequencia, proximaOcorrencia, eventosDoMes } from "../engine.js";
 import { editarTarefa, alternarTarefa } from "./tarefas.js";
 import { corRotina } from "./rotina.js";
 import { abrirFoco } from "./estudos.js";
+import * as push from "../push.js";
 
 const FRASES = [
   "Um passo de cada vez já é caminho.", "Cuidar de você também é produtividade.", "Hoje basta fazer o suficiente, e já está bom.",
@@ -30,6 +31,25 @@ function semana(cfg, go) {
     return h("button", { type: "button", role: "listitem", class: "wk" + (hoj ? " today" : ""), "aria-label": DIAS[d.getDay()] + " " + d.getDate() + (n ? ", " + n + " itens" : ""), onclick: () => go("calendario") },
       h("small", null, DIAS[d.getDay()]), h("strong", null, String(d.getDate())), h("i", { class: n ? "has" : "" }));
   }));
+}
+
+
+/* convite discreto: instalar na tela inicial e ligar os lembretes */
+function cardAcesso() {
+  let visto = 0; try { visto = +localStorage.getItem("lirio:dica") || 0; } catch (e) { /* ignore */ }
+  if (Date.now() - visto < 7 * 864e5) return null;
+  const instalar = !push.standalone() && (window.__lirioInstall || push.ios());
+  const avisos = push.suporta() && Notification.permission !== "denied" && !db.config().notif.ativo;
+  if (!instalar && !avisos) return null;
+  const passos = () => sheet("Instalar no iPhone", () => h("ol", { class: "steps" },
+    h("li", null, "Abra o Lírio no Safari."), h("li", null, "Toque em Compartilhar (o quadrado com a seta)."), h("li", null, "Escolha “Adicionar à Tela de Início”."), h("li", null, "Abra pelo ícone e ative as notificações em Ajustes.")), { noFocus: true });
+  return h("section", { class: "card tip" },
+    h("span", { class: "roundico" }, icon("sparkles", 20)),
+    h("div", { class: "tip-t" }, h("strong", null, "Deixe o Lírio a um toque"), h("p", { class: "muted small" }, instalar && avisos ? "Instale na tela inicial e ligue os lembretes de aulas, contas e do seu dia." : instalar ? "Instale na tela inicial para abrir como um app, sem digitar nada." : "Ligue os lembretes de aulas, contas e do seu dia.")),
+    h("div", { class: "row gap wrap" },
+      instalar ? h("button", { class: "btn primary sm", type: "button", onclick: async () => { if (window.__lirioInstall) { window.__lirioInstall.prompt(); await window.__lirioInstall.userChoice; window.__lirioInstall = null; rerender(); } else passos(); } }, "Instalar") : null,
+      avisos ? h("button", { class: "btn " + (instalar ? "ghost" : "primary") + " sm", type: "button", onclick: async () => { try { await push.ativar(); db.setConfig({ notif: Object.assign({}, db.config().notif, { ativo: true }) }); toast("Lembretes ativados"); } catch (x) { toast(x.message, 4200); } } }, "Ativar lembretes") : null,
+      h("button", { class: "btn ghost sm", type: "button", onclick: () => { try { localStorage.setItem("lirio:dica", String(Date.now())); } catch (e) { /* ignore */ } rerender(); } }, "Agora não")));
 }
 
 export function render(root, { cfg, go }) {
@@ -141,6 +161,7 @@ export function render(root, { cfg, go }) {
     h("div", { class: "hero-msg" }, h("h1", null, saudacao() + (nome ? ", " + nome : "")), h("p", { class: "muted" }, sub)),
     total ? h("div", { class: "hero-ring" }, anel(p, from, "Progresso do dia: " + Math.round(p * 100) + "%"), h("small", null, feitos + " de " + total)) : null,
     h("span", { class: "hero-flower", "aria-hidden": "true" })));
+  const dica = cardAcesso(); if (dica) root.appendChild(dica);
   root.appendChild(semana(cfg, go));
 
   if (!esq.length && !dir.length) { root.appendChild(empty("Seu dia está livre. Que tal criar uma rotina ou um hábito para começar?",
