@@ -15,7 +15,7 @@ const pk = (t) => (t === "perfis" ? "user_id" : "id");
 const CASCADE = { rotinas: [["rotina_registros", "rotina_id"]], habitos: [["habito_checks", "habito_id"]], materias: [["aulas", "materia_id"]] };
 const SETNULL = { materias: [["estudos", "materia_id"], ["foco", "materia_id"]] };
 
-const S = { user: null, data: {}, queue: [], online: navigator.onLine, syncing: false, lastSync: null, error: null, ready: false };
+const S = { user: null, data: {}, queue: [], online: navigator.onLine, syncing: false, lastSync: null, error: null, ready: false, sending: null };
 TABLES.forEach((t) => (S.data[t] = []));
 const subs = new Set();
 let mutSeq = 0; const touched = new Map(); /* "tabela|id" -> ordem da última mudança local */
@@ -63,10 +63,10 @@ function enqueue(op) {
   const id = op.k === "up" ? op.row[key] : op.id;
   const same = (o) => o.t === op.t && (o.k === "up" ? o.row[key] : o.id) === id;
   if (op.k === "up") {
-    /* troca no mesmo lugar para manter a ordem (pai antes do filho) */
-    const i = S.queue.findIndex((o) => o.k === "up" && same(o));
+    /* troca no mesmo lugar para manter a ordem (pai antes do filho), menos a que já está sendo enviada */
+    const i = S.queue.findIndex((o) => o.k === "up" && same(o) && o !== S.sending);
     if (i > -1) { S.queue[i] = op; return; }
-  } else S.queue = S.queue.filter((o) => !same(o));
+  } else S.queue = S.queue.filter((o) => !same(o) || o === S.sending);
   S.queue.push(op);
 }
 /* gravação silenciosa: não redesenha a tela (usada em campos de texto para não roubar o foco) */
@@ -131,20 +131,22 @@ export async function flush() {
     const { data: ses } = await sb.auth.getSession();
     if (!ses.session) return;
     while (S.queue.length) {
-      const op = S.queue[0];
+      const op = S.queue[0]; S.sending = op;
       const res = op.k === "up"
         ? await sb.from(op.t).upsert(op.row, { onConflict: NATURAL[op.t] || pk(op.t) })
         : await sb.from(op.t).delete().eq(pk(op.t), op.id);
+      S.sending = null;
+      const sai = () => { const i = S.queue.indexOf(op); if (i > -1) S.queue.splice(i, 1); };
       if (res.error) {
         if (isNet(res.error) || isAuth(res.error)) { S.error = "Sem conexão com o servidor."; break; }
         console.error("Falha ao sincronizar", op, res.error);
         S.error = "Um item não pôde ser salvo: " + res.error.message;
-        S.queue.shift();
-      } else S.queue.shift();
+        sai();
+      } else sai();
       persist();
     }
   } catch (e) { S.error = "Sem conexão com o servidor."; }
-  finally { S.syncing = false; persist(); notify("sync"); }
+  finally { S.sending = null; S.syncing = false; persist(); notify("sync"); }
 }
 
 let pulling = false;
@@ -167,7 +169,7 @@ export async function pull(force = false) {
     results.forEach(([t, server]) => {
       const key = pk(t);
       const dels = new Set(S.queue.filter((o) => o.t === t && o.k === "del").map((o) => o.id));
-      const ups = S.queue.filter((o) => o.t === t && o.k === "up").map((o) => o.row);
+      const ups = [...new Map(S.queue.filter((o) => o.t === t && o.k === "up").map((o) => [o.row[key], o.row])).values()];
       /* mudanças feitas enquanto a busca estava em andamento valem mais que a resposta do servidor */
       const fresh = new Set();
       touched.forEach((sq, k) => { if (sq > seq0 && k.startsWith(t + "|")) fresh.add(k.slice(t.length + 1)); });
