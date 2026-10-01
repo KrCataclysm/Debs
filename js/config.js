@@ -4,3 +4,6 @@ export const SUPABASE_KEY = "sb_publishable_-1eXY860mMxgyTL3nXc56g_g_5s22Tr";
 
 /* Chave pública das notificações (Web Push). A privada fica só no servidor. */
 export const VAPID_PUBLIC = "BGZLURY9-6z9PRRNCv_BOYr_NOrjn2rW9I0ZDjrwWyiLmGjVapC5pDrszUCdC5GaPkQcjXKHS-80YtdIVIL7tUE";
+
+/* Conta única dela. A chave (senha) viaja só no link que ela recebe e nunca fica no código. */
+export const ACESSO_EMAIL = "debora@lirio.app";

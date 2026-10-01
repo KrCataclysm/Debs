@@ -1,5 +1,5 @@
 /* Service worker do Lírio: abre offline. Supabase nunca passa por aqui. */
-const VERSAO = "lirio-v3";
+const VERSAO = "lirio-v4";
 const SHELL = ["./", "index.html", "css/app.css", "manifest.webmanifest", "vendor/supabase.js",
   "js/app.js", "js/lib.js", "js/theme.js", "js/store.js", "js/engine.js", "js/config.js", "js/push.js",
   "js/views/hoje.js", "js/views/rotina.js", "js/views/tarefas.js", "js/views/calendario.js", "js/views/habitos.js", "js/views/bemestar.js",
