@@ -10,7 +10,7 @@ export function editarLancamento(x, tipoIni = "gasto") {
   formSheet({
     title: x ? "Editar lançamento" : "Novo lançamento", submitLabel: x ? "Salvar" : "Adicionar",
     values: x ? { tipo: x.tipo, valor: x.valor, catG: x.tipo === "gasto" ? x.categoria : "Outros", catR: x.tipo === "receita" ? x.categoria : "Outros", descricao: x.descricao, data: x.data }
-      : { tipo: tipoIni, valor: "", catG: "Alimentação", catR: "Mesada", descricao: "", data: iso(hoje()) },
+      : { tipo: tipoIni, valor: "", catG: "Alimentação", catR: "Salário", descricao: "", data: iso(hoje()) },
     fields: [
       { key: "tipo", label: "Tipo", type: "chips", options: [{ v: "gasto", l: "Gasto" }, { v: "receita", l: "Entrada" }] },
       { key: "valor", label: "Valor (R$)", type: "money", required: true },

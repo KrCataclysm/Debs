@@ -61,7 +61,7 @@ function editarMateria(m) {
       { key: "max", label: "Limite de faltas (opcional)", type: "number", min: 1, max: 99, hint: "Se preencher, eu aviso quando estiver chegando perto." },
       { key: "cor", label: "Cor", type: "color" }
     ],
-    onSubmit: (s) => { const row = { nome: s.nome.trim(), professor: (s.professor || "").trim() || null, cor: s.cor, max_faltas: s.max === "" || s.max == null ? null : Math.max(1, Math.round(+s.max)) }; if (m) db.patch("materias", m.id, row); else db.add("materias", row); },
+    onSubmit: (s) => { const row = { nome: s.nome.trim(), professor: (s.professor || "").trim() || null, cor: s.cor, max_faltas: s.max === "" || s.max == null ? null : Math.max(1, Math.round(+s.max)) }; if (m) db.patch("materias", m.id, row); else db.add("materias", Object.assign({ faltas: 0 }, row)); },
     onDelete: m ? () => db.del("materias", m.id) : null, deleteLabel: "Excluir matéria"
   });
 }
@@ -121,16 +121,16 @@ function tMaterias(root, mats) {
   if (!lista.length) { root.appendChild(empty("Cadastre suas matérias do semestre para organizar provas, faltas e notas.", h("button", { class: "btn primary", type: "button", onclick: () => editarMateria() }, "Adicionar matéria"))); return; }
   root.appendChild(h("div", { class: "mats" }, lista.map((m) => {
     const its = db.rows("estudos").filter((x) => x.materia_id === m.id), notas = its.filter((x) => x.nota != null).map((x) => Number(x.nota)), pend = its.filter((x) => !x.concluido).length;
-    const media = notas.length ? notas.reduce((a, b) => a + b, 0) / notas.length : null, lim = m.max_faltas, fp = lim ? m.faltas / lim : 0;
+    const faltas = m.faltas || 0, media = notas.length ? notas.reduce((a, b) => a + b, 0) / notas.length : null, lim = m.max_faltas, fp = lim ? faltas / lim : 0;
     const min = db.rows("foco").filter((f) => f.materia_id === m.id).reduce((s, f) => s + f.minutos, 0);
     return h("article", { class: "mat", style: { "--c": m.cor || "var(--ac)" } },
       h("header", null, h("button", { class: "mat-name", type: "button", onclick: () => editarMateria(m) }, h("strong", null, m.nome), m.professor ? h("small", null, m.professor) : null), media != null ? chip("média " + media.toFixed(1).replace(".", ","), "soft") : null),
       h("div", { class: "mat-stats" }, h("div", null, h("strong", null, String(pend)), h("small", null, pend === 1 ? "pendente" : "pendentes")), h("div", null, h("strong", null, min >= 60 ? Math.floor(min / 60) + "h" + (min % 60 ? String(min % 60).padStart(2, "0") : "") : min + "min"), h("small", null, "de foco"))),
-      h("div", { class: "faltas" }, h("div", { class: "row between" }, h("span", { class: "muted small" }, "Faltas"), h("strong", { class: fp >= 1 ? "t-bad" : fp >= 0.75 ? "t-warn" : "" }, m.faltas + (lim ? " / " + lim : ""))),
+      h("div", { class: "faltas" }, h("div", { class: "row between" }, h("span", { class: "muted small" }, "Faltas"), h("strong", { class: fp >= 1 ? "t-bad" : fp >= 0.75 ? "t-warn" : "" }, faltas + (lim ? " / " + lim : ""))),
         lim ? progress(Math.min(1, fp), fp >= 1 ? "bad" : fp >= 0.75 ? "warn" : "") : null,
         h("div", { class: "row gap end" },
-          h("button", { class: "btn icon ghost sm", type: "button", "aria-label": "Menos uma falta em " + m.nome, disabled: m.faltas <= 0, onclick: () => db.patch("materias", m.id, { faltas: Math.max(0, m.faltas - 1) }) }, icon("minus", 16)),
-          h("button", { class: "btn icon ghost sm", type: "button", "aria-label": "Mais uma falta em " + m.nome, onclick: () => db.patch("materias", m.id, { faltas: m.faltas + 1 }) }, icon("plus", 16)))));
+          h("button", { class: "btn icon ghost sm", type: "button", "aria-label": "Menos uma falta em " + m.nome, disabled: faltas <= 0, onclick: () => db.patch("materias", m.id, { faltas: Math.max(0, faltas - 1) }) }, icon("minus", 16)),
+          h("button", { class: "btn icon ghost sm", type: "button", "aria-label": "Mais uma falta em " + m.nome, onclick: () => db.patch("materias", m.id, { faltas: faltas + 1 }) }, icon("plus", 16)))));
   })));
 }
 
