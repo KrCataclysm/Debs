@@ -51,7 +51,7 @@ export function applyTheme(cfg) {
   const tema = TEMAS.find((t) => t.id === c.tema) || TEMAS[0];
   const accent = /^#[0-9a-f]{6}$/i.test(c.accent || "") ? c.accent : tema.accent;
   const dark = c.modo === "escuro" || (c.modo === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
-  const ac = dark ? mix(accent, "#ffffff", 0.22) : accent;
+  const ac = dark ? mix(accent, "#ffffff", 0.38) : accent;
   root.dataset.mode = dark ? "dark" : "light";
   root.style.setProperty("--ac", ac);
   const L = lum(ac), cBranco = 1.05 / (L + 0.05), cEscuro = (L + 0.05) / (lum("#2a1830") + 0.05);
