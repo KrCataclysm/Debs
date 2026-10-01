@@ -200,6 +200,7 @@ export function sheet(title, build, opts = {}) {
   body.appendChild(build(close));
   document.body.appendChild(bd);
   document.body.classList.add("lock");
+  box.tabIndex = -1; box.focus({ preventScroll: true });
   const first = body.querySelector("input:not([type=hidden]):not([type=checkbox]),textarea,select");
   if (first && !opts.noFocus && !matchMedia("(pointer: coarse)").matches) setTimeout(() => first.focus({ preventScroll: true }), 80);
   return close;
